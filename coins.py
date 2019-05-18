@@ -24,14 +24,15 @@ UP, RIGHT, DOWN, LEFT = 0, 1, 2, 3
 
 
 # Options
-ZOMBIE_COUNT = 1
+ZOMBIE_COUNT = 3
 COIN_COUNT = 10
 MAX_GRID = 7
-FRAME_RATE = 1/2
+FRAME_RATE = 0.8
 ZOMBIE_SPEED = 1/5
+COIN_SPEED = 4/5
 
 
-SCREEN_SIZE = 800
+SCREEN_SIZE = 400
 CELL_LENGTH = round(SCREEN_SIZE/MAX_GRID)
 SCREEN_TITLE = "Sprite Collect Coins Example"
 
@@ -39,11 +40,15 @@ SCREEN_TITLE = "Sprite Collect Coins Example"
 class Player(arcade.Sprite):
     def __init__(self):
         super().__init__("images/character.png", SPRITE_SCALING_PLAYER)
+        self.x = 0
+        self.y = 0
 
 class Zombie(arcade.Sprite):
     def __init__(self, speed=0.5):
         super().__init__("images/zombie.png", SPRITE_SCALING_ZOMBIE)
         self.direction = random.randint(0, 3)
+        self.x = 0
+        self.y = 0
         if speed > 1:
             self.speed = 1
         elif speed < 0:
@@ -51,10 +56,21 @@ class Zombie(arcade.Sprite):
         else:
             self.speed = speed
 
+
+
 class Coin(arcade.Sprite):
-    def __init__(self):
+    def __init__(self, speed=0.5):
         super().__init__("images/coin_01.png", SPRITE_SCALING_COIN)
         self.direction = random.randint(0, 3)
+        self.x = 0
+        self.y = 0
+        if speed > 1:
+            self.speed = 1
+        elif speed < 0:
+            self.speed = 0
+        else:
+            self.speed = speed
+
 
 class MyGame(arcade.Window):
     """ Our custom Window Class"""
@@ -87,9 +103,7 @@ class MyGame(arcade.Window):
         self.END = False
         self.WIN = False
 
-        # State of the agents
-        self.state = [[0]*MAX_GRID]*MAX_GRID
-
+        
 
         arcade.set_background_color(arcade.color.AMAZON)
 
@@ -106,23 +120,26 @@ class MyGame(arcade.Window):
 
         # Set up the player
         # Character image from kenney.nl
-        self.player_sprite = Player()
-        self.player_sprite.center_x = CELL_LENGTH/2
-        self.player_sprite.center_y = CELL_LENGTH/2
-        self.player_list.append(self.player_sprite)
-        self.state[0][0] = 1
-
+        self.player = Player()
+        self.player.x = 0
+        self.player.y = 0
+        self.player.center_x = CELL_LENGTH/2
+        self.player.center_y = CELL_LENGTH/2
+        self.player_list.append(self.player)
+        
         # Create the coins
         for i in range(COIN_COUNT):
 
             # Create the coin instance
             # Coin image from kenney.nl
-            coin = Coin()
+            coin = Coin(COIN_SPEED)
 
             # Position the coin
-            coin.center_x = random.randint(0, MAX_GRID-1) * CELL_LENGTH + CELL_LENGTH/2
-            coin.center_y = random.randint(0, MAX_GRID-1) * CELL_LENGTH + CELL_LENGTH/2
-
+            coin.x = random.randint(0, MAX_GRID-1)
+            coin.y = random.randint(0, MAX_GRID-1)
+            coin.center_x = coin.x * CELL_LENGTH + CELL_LENGTH/2
+            coin.center_y = coin.y * CELL_LENGTH + CELL_LENGTH/2
+            
             # Add the coin to the lists
             self.coin_list.append(coin)
 
@@ -134,9 +151,11 @@ class MyGame(arcade.Window):
             zombie = Zombie(ZOMBIE_SPEED)
 
             # Position the coin
-            zombie.center_x = random.randint(0, MAX_GRID-1) * CELL_LENGTH + CELL_LENGTH/2
-            zombie.center_y = random.randint(0, MAX_GRID-1) * CELL_LENGTH + CELL_LENGTH/2
-
+            zombie.x = random.randint(0, MAX_GRID-1)
+            zombie.y = random.randint(0, MAX_GRID-1)
+            zombie.center_x = zombie.x * CELL_LENGTH + CELL_LENGTH/2
+            zombie.center_y = zombie.y * CELL_LENGTH + CELL_LENGTH/2
+            
             # Add the coin to the lists
             self.zombie_list.append(zombie)
 
@@ -174,18 +193,22 @@ class MyGame(arcade.Window):
         arcade.draw_text(time, 10, 7, arcade.color.WHITE, 10)
 
 
-        
+    '''    
     def on_key_press(self, key, modifiers):
         """ Called whenever the user presses a key. """
         if key == arcade.key.LEFT:
-            self.player_sprite.center_x = (self.player_sprite.center_x - CELL_LENGTH)%SCREEN_SIZE
+            self.player.x = (self.player.x - 1)%MAX_GRID
+            self.player.center_x = (self.player.center_x - CELL_LENGTH)%SCREEN_SIZE
         elif key == arcade.key.RIGHT:
-            self.player_sprite.center_x = (self.player_sprite.center_x + CELL_LENGTH)%SCREEN_SIZE
+            self.player.x = (self.player.x + 1)%MAX_GRID
+            self.player.center_x = (self.player.center_x + CELL_LENGTH)%SCREEN_SIZE
         elif key == arcade.key.UP:
-            self.player_sprite.center_y = (self.player_sprite.center_y + CELL_LENGTH)%SCREEN_SIZE
+            self.player.y = (self.player.y + 1)%MAX_GRID
+            self.player.center_y = (self.player.center_y + CELL_LENGTH)%SCREEN_SIZE
         elif key == arcade.key.DOWN:
-            self.player_sprite.center_y = (self.player_sprite.center_y - CELL_LENGTH)%SCREEN_SIZE
-    
+            self.player.y = (self.player.y + 1)%MAX_GRID
+            self.player.center_y = (self.player.center_y - CELL_LENGTH)%SCREEN_SIZE
+    '''
     
     def update(self, delta_time):
         """ Movement and game logic """
@@ -194,13 +217,13 @@ class MyGame(arcade.Window):
         # Call update on all sprites (The sprites don't do much in this
         # example though.)
         self.coin_list.update()
-        self.player_sprite.update()
+        self.player.update()
         self.zombie_list.update()
 
         
 
         # Generate a list of all coins that collided with the player.
-        coins_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
+        coins_hit_list = arcade.check_for_collision_with_list(self.player, self.coin_list)
 
         # Loop through each colliding coin, remove it, and add to the score.
         for coin in coins_hit_list:
@@ -209,9 +232,28 @@ class MyGame(arcade.Window):
         
         if len(self.coin_list) == 0:
             self.WIN = True
+
+        # Get the move by the user
+        player_pos = (self.player.x, self.player.y)
+        coins_pos = [(coin.x, coin.y) for coin in self.coin_list]
+        zombie_pos =[(zombie.x, zombie.y) for zombie in self.zombie_list]
+        dir = solver(player_pos, coins_pos, zombie_pos)
+        if dir == LEFT:
+            self.player.x = (self.player.x - 1)%MAX_GRID
+            self.player.center_x = (self.player.center_x - CELL_LENGTH)%SCREEN_SIZE
+        elif dir == RIGHT:
+            self.player.x = (self.player.x + 1)%MAX_GRID
+            self.player.center_x = (self.player.center_x + CELL_LENGTH)%SCREEN_SIZE
+        elif dir == UP:
+            self.player.y = (self.player.y + 1)%MAX_GRID
+            self.player.center_y = (self.player.center_y + CELL_LENGTH)%SCREEN_SIZE
+        elif dir == DOWN:
+            self.player.y = (self.player.y + 1)%MAX_GRID
+            self.player.center_y = (self.player.center_y - CELL_LENGTH)%SCREEN_SIZE
+        
         
         # Generate a list of all zombies that collided with the player.
-        zombie_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.zombie_list)
+        zombie_hit_list = arcade.check_for_collision_with_list(self.player, self.zombie_list)
 
         # Loop through each colliding coin, remove it, and add to the score.
         if zombie_hit_list and not self.WIN:
@@ -219,14 +261,22 @@ class MyGame(arcade.Window):
         
 
         for coin in self.coin_list:
-            dir = (coin.direction + random.randint(-1, 1))%4
+            if random.random() > coin.speed:
+                dir = 4
+            else:
+                coin.direction = (coin.direction + random.randint(-1, 1))%4
+                dir = coin.direction
             if dir == UP:
+                coin.y = (coin.y + 1)%MAX_GRID
                 coin.center_y = (coin.center_y + CELL_LENGTH)%SCREEN_SIZE
             elif dir == DOWN:
+                coin.y = (coin.y - 1)%MAX_GRID
                 coin.center_y = (coin.center_y - CELL_LENGTH)%SCREEN_SIZE
             elif dir == RIGHT:
+                coin.y = (coin.x + 1)%MAX_GRID
                 coin.center_x = (coin.center_x + CELL_LENGTH)%SCREEN_SIZE
             elif dir == LEFT:
+                coin.y = (coin.x - 1)%MAX_GRID
                 coin.center_x = (coin.center_x - CELL_LENGTH)%SCREEN_SIZE
             coin.direction=dir
         
@@ -237,18 +287,23 @@ class MyGame(arcade.Window):
                 zombie.direction = (zombie.direction + random.randint(-1, 1))%4
                 dir = zombie.direction
             if dir == UP:
+                zombie.x = (zombie.y + 1)%MAX_GRID
                 zombie.center_y = (zombie.center_y + CELL_LENGTH)%SCREEN_SIZE
             elif dir == DOWN:
+                zombie.x = (zombie.y - 1)%MAX_GRID
                 zombie.center_y = (zombie.center_y - CELL_LENGTH)%SCREEN_SIZE
             elif dir == RIGHT:
+                zombie.x = (zombie.x + 1)%MAX_GRID
                 zombie.center_x = (zombie.center_x + CELL_LENGTH)%SCREEN_SIZE
             elif dir == LEFT:
+                zombie.x = (zombie.x - 1)%MAX_GRID
                 zombie.center_x = (zombie.center_x - CELL_LENGTH)%SCREEN_SIZE
 
         self.time += 1
 
-def solve(state):
-    pass
+def solver(player_pos, coins_pos, zombie_pos):
+    
+    return random.randint(0,2)
         
 
 
